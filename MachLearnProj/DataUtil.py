@@ -1,4 +1,5 @@
 import csv
+from sklearn.preprocessing import normalize
 
 def column(matrix, i):
     return [row[i] for row in matrix]
@@ -42,7 +43,7 @@ def convertSymbolic(data, symCol, normalizeFlag=False):
 
         tmpData.append(newRow)
 
-    return tmpData, enumerations #normalizeData(tmpData,normalizeFlag), enumerations
+    return normalizeData(tmpData,normalizeFlag), enumerations
 
 def readData(filename, dataInDict=False):
     header = []
