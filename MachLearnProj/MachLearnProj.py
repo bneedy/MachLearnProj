@@ -10,7 +10,7 @@ user = getpass.getuser()
 if user == 'blake':
     GLOBAL_DATA_PATH='C:\\MyDrive\\Transporter\\KSU Shared\\2017\\CIS 732\\Projects\\'
 else:
-    GLOBAL_DATA_PATH='C:\\'
+    GLOBAL_DATA_PATH='K:\\Tracy Marshall\\Transporter\\KSU Masters\\2017\\CIS 732\\Projects\\'
 
 filename = GLOBAL_DATA_PATH + 'acct_table_tiny.txt'
 
