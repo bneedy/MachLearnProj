@@ -1,40 +1,72 @@
-class DataUtil(object):
-    """Utilities for normalizing data and converting symbolic data"""
+import csv
 
-    #def __init__(self):
-    #    pass
+def column(matrix, i):
+    return [row[i] for row in matrix]
 
-    def column(matrix, i):
-        return [row[i] for row in matrix]
+def normalizeData(origData, normalizeFlag=True):
+    if normalizeFlag:
+        return normalize(origData[:], axis=1, norm='l1')
+    else:
+        return origData
 
-    def normalizeData(self, origData, normalizeFlag=True):
-        if normalizeFlag:
-            return normalize(origData, axis=1, norm='l1')
-        else:
-            return origData
+def convertSymbolic(data, symCol, normalizeFlag=False):
 
-    def convertSymbolic(self, data, normalizeFlag=False):
-        tmpData = data
-        enumeratedDict = {}
-        columns = len(tmpData[0])
+    # New Holder of Data
+    tmpData = []
 
-        # Loop through all columns
-        for col in range(columns):
-            enumeratedDict[col] = {}
-            currColumn = column(tmpData, col)
+    # Dict of Enumerations
+    enumerations = {}
 
-            # Determine if they are all floats
-            if not all(item.isdigit() for item in currColumn):
+    for rowNum, row in enumerate(data):
+        newRow = []
 
-                for row, item in enumerate(currColumn):
-                    itemVal = 0
+        for colNum, item in enumerate(row):
+            # Check if we have a list of known symbolic columns
+            if colNum in symCol:
 
-                    if item in enumeratedDict[col]:
-                        itemVal = int(enumeratedDict[col][item])
+                if colNum in enumerations:
+                    if item in enumerations[colNum]:
+                        newItem = enumerations[colNum].index(item)
                     else:
-                        itemVal = len(enumeratedDict[col].keys())
-                        enumeratedDict[col][item] = itemVal
+                        newItem = len(enumerations[colNum])
+                        enumerations[colNum].append(item)
+                else:
+                    # Create list of enumerations per column
+                    enumerations[colNum] = [item]
+                    newItem = 0
 
-                    tmpData[row][col] = itemVal
+                newRow.append(float(newItem))
 
-        return self.normalizeData(self,tmpData,normalizeFlag)
+            else:
+                newRow.append(float(item))
+
+        tmpData.append(newRow)
+
+    return tmpData, enumerations #normalizeData(tmpData,normalizeFlag), enumerations
+
+def readData(filename, dataInDict=False):
+    header = []
+    data = []
+    dataDict = {}
+
+    with open(filename) as fin:
+        csvData = csv.reader(fin, delimiter=':')
+        headerFlag = True
+        for rowNum, row in enumerate(csvData):
+            if headerFlag:
+                for item in list(row):
+                    header.append(str(item).strip())
+                    if dataInDict:
+                        dataDict[str(item).strip()] = []
+                headerFlag = False
+            else:
+                if dataInDict:
+                    for i, item in enumerate(list(row)):
+                        dataDict[headerList[i]].append(item)
+                else:
+                    data.append(row)
+
+    if dataInDict:
+        return dataDict, header
+    else:
+        return data, header
