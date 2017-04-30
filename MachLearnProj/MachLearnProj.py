@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import getpass
 from sklearn.cluster import AgglomerativeClustering
+  
 
 user = getpass.getuser()
 
@@ -57,6 +58,23 @@ blakelabels = blakemodel.labels_
 plt.figure(1)
 plt.scatter(npDataArray[:,0], npDataArray[:,1], c=blakelabels, cmap='Accent')
 plt.title("Ward clustering in " + str(blakeTimeTaken) + " s")
+plt.xlabel('CPU')
+plt.ylabel('Memory')
+plt.colorbar()
+
+memCpuByLabel = {}
+for idx, item in enumerate(newData):
+    if blakelabels[idx] not in memCpuByLabel:
+        memCpuByLabel[blakelabels[idx]] = []
+
+    memCpuByLabel[blakelabels[idx]].append(newData[idx,0] + newData[idx,1])
+
+labelAverages = {}
+for label in memCpuByLabel:
+    labelAverages[label] = np.mean(memCpuByLabel[label])
+
+print('CPU/Mem Averages by label for Blake Model: ')
+print(labelAverages)
 
 
 ######### Tracy's Model ##############
@@ -74,6 +92,27 @@ tracylabels = tracymodel.labels_
 plt.figure(2)
 plt.scatter(npDataArray[:,0], npDataArray[:,1], c=tracylabels, cmap='Accent')
 plt.title("Average clustering in " + str(tracyTimeTaken) + " s")
+plt.xlabel('CPU')
+plt.ylabel('Memory')
+plt.colorbar()
+
+
+memCpuByLabel = {}
+for idx, item in enumerate(newData):
+    if tracylabels[idx] not in memCpuByLabel:
+        memCpuByLabel[tracylabels[idx]] = []
+
+    memCpuByLabel[tracylabels[idx]].append(newData[idx,0] + newData[idx,1])
+
+labelAverages = {}
+for label in memCpuByLabel:
+    labelAverages[label] = np.mean(memCpuByLabel[label])
+
+print('CPU/Mem Averages by label for Tracy Model: ')
+print(labelAverages)
+
+
+
 
 
 
