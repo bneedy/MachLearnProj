@@ -113,8 +113,5 @@ print(labelAverages)
 
 
 
-#### WE NEED TO REMOVE THIS ######
-
-
 
 plt.show()
