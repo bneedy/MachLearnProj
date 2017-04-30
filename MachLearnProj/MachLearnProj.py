@@ -6,9 +6,7 @@ import getpass
 from sklearn.cluster import AgglomerativeClustering
   
 
-user = getpass.getuser()
-
-if user == 'blake':
+if getpass.getuser() == 'blake':
     GLOBAL_DATA_PATH='C:\\MyDrive\\Transporter\\KSU Shared\\2017\\CIS 732\\Projects\\'
 else:
     GLOBAL_DATA_PATH='K:\\Tracy Marshall\\Transporter\\KSU Masters\\2017\\CIS 732\\Projects\\'
@@ -43,7 +41,7 @@ newData, keyDict = util.convertSymbolic(subSetData, symCols, True)
 
 
 ######### Blake's Model ##############
-blakemodel = AgglomerativeClustering(linkage='complete', n_clusters=5)
+blakemodel = AgglomerativeClustering(linkage='complete', n_clusters=8)
 
 npDataArray = np.array(newData)
 
@@ -52,8 +50,6 @@ blakedta = blakemodel.fit(npDataArray)
 blakeTimeTaken = time.time() - t
 
 blakelabels = blakemodel.labels_
-
-#print(str(blakelabels))
 
 plt.figure(1)
 plt.scatter(npDataArray[:,0], npDataArray[:,1], c=blakelabels, cmap='Accent')
@@ -79,15 +75,13 @@ print(labelAverages)
 
 ######### Tracy's Model ##############
 
-tracymodel = AgglomerativeClustering(linkage='average', n_clusters=5)
+tracymodel = AgglomerativeClustering(linkage='average', n_clusters=8)
 
 t = time.time()
 tracydta = tracymodel.fit(npDataArray)
 tracyTimeTaken = time.time() - t
 
 tracylabels = tracymodel.labels_
-
-#print(str(tracylabels))
 
 plt.figure(2)
 plt.scatter(npDataArray[:,0], npDataArray[:,1], c=tracylabels, cmap='Accent')
@@ -110,11 +104,6 @@ for label in memCpuByLabel:
 
 print('CPU/Mem Averages by label for Tracy Model: ')
 print(labelAverages)
-
-
-
-
-
 
 
 plt.show()
