@@ -43,7 +43,7 @@ newData, keyDict = util.convertSymbolic(subSetData, symCols, True)
 
 
 ######### Blake's Model ##############
-blakemodel = AgglomerativeClustering(linkage='complete', n_clusters=5)
+blakemodel = AgglomerativeClustering(linkage='complete', n_clusters=8)
 
 npDataArray = np.array(newData)
 
@@ -79,7 +79,7 @@ print(labelAverages)
 
 ######### Tracy's Model ##############
 
-tracymodel = AgglomerativeClustering(linkage='average', n_clusters=5)
+tracymodel = AgglomerativeClustering(linkage='average', n_clusters=8)
 
 t = time.time()
 tracydta = tracymodel.fit(npDataArray)
