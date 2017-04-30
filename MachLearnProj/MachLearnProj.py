@@ -43,18 +43,43 @@ for idx, item in enumerate(subSetData):
     print(str(newData[idx]))
     print(' ')
 
-model = AgglomerativeClustering(linkage='ward', n_clusters=5)
+
+######### Blake's Model ##############
+
+blakemodel = AgglomerativeClustering(linkage='ward', n_clusters=5)
 
 npDataArray = np.array(newData)
 
 t = time.time()
-dta = model.fit(npDataArray)
-timeTaken = time.time() - t
+blakedta = blakemodel.fit(npDataArray)
+blakeTimeTaken = time.time() - t
 
-labels = model.labels_
+blakelabels = blakemodel.labels_
 
-print(str(labels))
+print(str(blakelabels))
 
-plt.scatter(npDataArray[:,0], npDataArray[:,1], c=labels, cmap='Accent')
-plt.title("Ward clustering in " + str(timeTaken) + " s")
+plt.figure(1)
+plt.scatter(npDataArray[:,0], npDataArray[:,1], c=blakelabels, cmap='Accent')
+plt.title("Ward clustering in " + str(blakeTimeTaken) + " s")
+
+
+######### Tracy's Model ##############
+
+tracymodel = AgglomerativeClustering(linkage='average', n_clusters=5)
+
+t = time.time()
+tracydta = tracymodel.fit(npDataArray)
+tracyTimeTaken = time.time() - t
+
+tracylabels = tracymodel.labels_
+
+print(str(tracylabels))
+
+plt.figure(2)
+plt.scatter(npDataArray[:,0], npDataArray[:,1], c=tracylabels, cmap='Accent')
+plt.title("Average clustering in " + str(tracyTimeTaken) + " s")
+
+
+
+
 plt.show()
