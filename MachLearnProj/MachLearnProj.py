@@ -6,9 +6,7 @@ import getpass
 from sklearn.cluster import AgglomerativeClustering
   
 
-user = getpass.getuser()
-
-if user == 'blake':
+if getpass.getuser() == 'blake':
     GLOBAL_DATA_PATH='C:\\MyDrive\\Transporter\\KSU Shared\\2017\\CIS 732\\Projects\\'
 else:
     GLOBAL_DATA_PATH='K:\\Tracy Marshall\\Transporter\\KSU Masters\\2017\\CIS 732\\Projects\\'
@@ -53,8 +51,6 @@ blakeTimeTaken = time.time() - t
 
 blakelabels = blakemodel.labels_
 
-#print(str(blakelabels))
-
 plt.figure(1)
 plt.scatter(npDataArray[:,0], npDataArray[:,1], c=blakelabels, cmap='Accent')
 plt.title("Ward clustering in " + str(blakeTimeTaken) + " s")
@@ -87,8 +83,6 @@ tracyTimeTaken = time.time() - t
 
 tracylabels = tracymodel.labels_
 
-#print(str(tracylabels))
-
 plt.figure(2)
 plt.scatter(npDataArray[:,0], npDataArray[:,1], c=tracylabels, cmap='Accent')
 plt.title("Average clustering in " + str(tracyTimeTaken) + " s")
@@ -110,8 +104,6 @@ for label in memCpuByLabel:
 
 print('CPU/Mem Averages by label for Tracy Model: ')
 print(labelAverages)
-
-
 
 
 plt.show()
