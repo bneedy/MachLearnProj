@@ -6,11 +6,11 @@ import getpass
 from sklearn.cluster import AgglomerativeClustering
 from multiprocessing import Process
 
-def blakesClustering(data):
+def blakesClustering(data, clustCount, num):
     ######### Blake's Model ##############
     linkageType = 'complete'
     newData = data[:]
-    blakemodel = AgglomerativeClustering(linkage=linkageType, n_clusters=8)
+    blakemodel = AgglomerativeClustering(linkage=linkageType, n_clusters=clustCount)
 
     npDataArray = np.array(newData)
 
@@ -19,15 +19,15 @@ def blakesClustering(data):
     blakeTimeTaken = time.time() - t
 
     blakelabels = blakemodel.labels_
-    title = "Clustering " + str(len(npDataArray)) + " data points using " + linkageType + " in " + str(round(blakeTimeTaken, 3)) + " sec"
-    blakelabels, avgs = sortLabels(newData, blakelabels, 2)
-    plotData(npDataArray, title, blakelabels, avgs, 1)
+    title = "Clustering " + str(len(npDataArray)) + " data points into " + str(clustCount) + " clusters using " + linkageType + " in " + str(round(blakeTimeTaken, 3)) + " sec"
+    blakelabels, avgs = sortLabels(newData, blakelabels)
+    plotData(npDataArray, title, blakelabels, avgs, num)
 
-def tracysClustering(data):
+def tracysClustering(data, clustCount, num):
     ######### Tracy's Model ##############
     linkageType = 'average'
     newData = data[:]
-    tracymodel = AgglomerativeClustering(linkage=linkageType, n_clusters=8)
+    tracymodel = AgglomerativeClustering(linkage=linkageType, n_clusters=clustCount)
     
     npDataArray = np.array(newData)
 
@@ -36,24 +36,29 @@ def tracysClustering(data):
     tracyTimeTaken = time.time() - t
 
     tracylabels = tracymodel.labels_
-    title = "Clustering " + str(len(npDataArray)) + " data points using " + linkageType + " in " + str(round(tracyTimeTaken, 3)) + " sec"
-    tracylabels, avgs = sortLabels(newData, tracylabels, 2)
-    plotData(npDataArray, title, tracylabels, avgs, 2)
+    title = "Clustering " + str(len(npDataArray)) + " data points into " + str(clustCount) + " clusters using " + linkageType + " in " + str(round(tracyTimeTaken, 3)) + " sec"
+    tracylabels, avgs = sortLabels(newData, tracylabels)
+    plotData(npDataArray, title, tracylabels, avgs, num)
 
 
 def plotData(plotData, title, labels, avgLabels, figureNum):
     plt.figure(num=figureNum, figsize=(9,6), dpi=150)
-    plt.scatter(plotData[:,0], plotData[:,1], c=labels, cmap='Accent')
+    cmap = plt.cm.jet
+    cmaplist = [cmap(i) for i in range(cmap.N)]
+    cmap = cmap.from_list('Custom cmap', cmaplist, len(set(labels)))
+    plt.scatter(plotData[:,0], plotData[:,1], c=labels, cmap=cmap)
     plt.title(title)
     plt.xlabel('Normalized CPU Usage')
     plt.ylabel('Normalized Memory Usage')
-    cbar = plt.colorbar()
+    cbar = plt.colorbar(cmap=cmap)
     
     counts = [0] * len(set(labels))
     for item in labels:
         counts[item] += 1
     
-    cbar.set_ticks(np.linspace(0.5, len(counts) - 0.5, len(counts) + 1))
+    offsetVal = (1/len(counts))/2
+    ticks = np.linspace(0.5 - offsetVal, len(counts) - offsetVal - 0.5, len(counts) + 1)
+    cbar.set_ticks(ticks)
     tickLabels = []
     for i, val in enumerate(counts):
         tickLabels.append(str(val) + " (" + str(round(float(avgLabels[i]),3)) + ")")
@@ -64,7 +69,7 @@ def plotData(plotData, title, labels, avgLabels, figureNum):
 
     plt.show()
 
-def sortLabels(data, labels, num):
+def sortLabels(data, labels):
     memCpuByLabel = {}
     for idx, item in enumerate(data):
         if labels[idx] not in memCpuByLabel:
@@ -75,9 +80,6 @@ def sortLabels(data, labels, num):
     labelAverages = {}
     for label in memCpuByLabel:
         labelAverages[label] = np.mean(memCpuByLabel[label])
-
-    #print('CPU/Mem Averages by label for figure' + str(num) + ': ')
-    #print(labelAverages)
 
     # Sort labels from min to max
     minToMaxList = [0] * len(labelAverages.keys())
@@ -107,13 +109,16 @@ if __name__ == '__main__':
     else:
         GLOBAL_DATA_PATH='K:\\Tracy Marshall\\Transporter\\KSU Masters\\2017\\CIS 732\\Projects\\'
 
-    filename = GLOBAL_DATA_PATH + 'acct_table_small.txt'
+    filename = GLOBAL_DATA_PATH + 'acct_table_tiny.txt'
 
     # Data with feature selection
     subSetData = []
 
     # List of symbolic columns
     symCols = [2]
+
+    # Cluster count
+    clustCounts = [3, 4, 5, 6, 7, 8]
 
     # read in data
     data, head = util.readData(filename)
@@ -135,17 +140,22 @@ if __name__ == '__main__':
 
     newData, keyDict = util.convertSymbolic(subSetData, symCols, True)
 
+    blakeProcs = []
+    tracyProcs = []
+
+    for i, clustCount in enumerate(clustCounts):
+        blakeProcs.append(Process(target=blakesClustering, args=(newData,clustCount, (i*2)+1)))
+        tracyProcs.append(Process(target=tracysClustering, args=(newData,clustCount, (i*2)+2)))
+        
     print("Starting multi processor cluster...")
     procTime = time.time()
+    for i in range(min(len(blakeProcs), len(tracyProcs))):
+        blakeProcs[i].start()
+        tracyProcs[i].start()
 
-    blakeProc = Process(target=blakesClustering, args=(newData,))
-    tracyProc = Process(target=tracysClustering, args=(newData,))
-
-    blakeProc.start()
-    tracyProc.start()
-
-    blakeProc.join()
-    tracyProc.join()
+    for i in range(min(len(blakeProcs), len(tracyProcs))):
+        blakeProcs[i].join()
+        tracyProcs[i].join()
 
     # Dependent on time to close plots...
     endTime = time.time() - procTime
