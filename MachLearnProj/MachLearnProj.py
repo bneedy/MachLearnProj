@@ -19,9 +19,9 @@ def blakesClustering(data):
     blakeTimeTaken = time.time() - t
 
     blakelabels = blakemodel.labels_
-    title = "Clustering " + str(len(npDataArray)) + " data points by " + linkageType + " in " + str(round(blakeTimeTaken, 3)) + " sec"
-    blakelabels = sortLabels(newData, blakelabels, 2)
-    plotData(npDataArray, title, blakelabels, 1)
+    title = "Clustering " + str(len(npDataArray)) + " data points using " + linkageType + " in " + str(round(blakeTimeTaken, 3)) + " sec"
+    blakelabels, avgs = sortLabels(newData, blakelabels, 2)
+    plotData(npDataArray, title, blakelabels, avgs, 1)
 
 def tracysClustering(data):
     ######### Tracy's Model ##############
@@ -36,18 +36,32 @@ def tracysClustering(data):
     tracyTimeTaken = time.time() - t
 
     tracylabels = tracymodel.labels_
-    title = "Clustering " + str(len(npDataArray)) + " data points by " + linkageType + " in " + str(round(tracyTimeTaken, 3)) + " sec"
-    tracylabels = sortLabels(newData, tracylabels, 2)
-    plotData(npDataArray, title, tracylabels, 2)
+    title = "Clustering " + str(len(npDataArray)) + " data points using " + linkageType + " in " + str(round(tracyTimeTaken, 3)) + " sec"
+    tracylabels, avgs = sortLabels(newData, tracylabels, 2)
+    plotData(npDataArray, title, tracylabels, avgs, 2)
 
 
-def plotData(plotData, title, labels, figureNum):
-    plt.figure(figureNum)
+def plotData(plotData, title, labels, avgLabels, figureNum):
+    plt.figure(num=figureNum, figsize=(9,6), dpi=150)
     plt.scatter(plotData[:,0], plotData[:,1], c=labels, cmap='Accent')
     plt.title(title)
-    plt.xlabel('CPU')
-    plt.ylabel('Memory')
-    plt.colorbar()
+    plt.xlabel('Normalized CPU Usage')
+    plt.ylabel('Normalized Memory Usage')
+    cbar = plt.colorbar()
+    
+    counts = [0] * len(set(labels))
+    for item in labels:
+        counts[item] += 1
+    
+    cbar.set_ticks(np.linspace(0.5, len(counts) - 0.5, len(counts) + 1))
+    tickLabels = []
+    for i, val in enumerate(counts):
+        tickLabels.append(str(val) + " (" + str(round(float(avgLabels[i]),3)) + ")")
+    cbar.set_ticklabels(tickLabels)
+
+    cbar.ax.get_yaxis().labelpad = 15
+    cbar.ax.set_ylabel('# in each cluster with average cpu/mem', rotation=270)
+
     plt.show()
 
 def sortLabels(data, labels, num):
@@ -81,7 +95,11 @@ def sortLabels(data, labels, num):
     for item in labels:
         newLabels.append(swapDict[item])
 
-    return newLabels
+    newLabelAverages = {}
+    for key, item in labelAverages.items():
+        newLabelAverages[swapDict[key]] = item
+
+    return newLabels, newLabelAverages
 
 if __name__ == '__main__':
     if getpass.getuser() == 'blake':
