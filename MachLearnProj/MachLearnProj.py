@@ -10,7 +10,7 @@ def blakesClustering(data):
     ######### Blake's Model ##############
     linkageType = 'complete'
     newData = data[:]
-    blakemodel = AgglomerativeClustering(linkage=linkageType, n_clusters=8)
+    blakemodel = AgglomerativeClustering(linkage=linkageType, n_clusters=3)
 
     npDataArray = np.array(newData)
 
@@ -27,7 +27,7 @@ def tracysClustering(data):
     ######### Tracy's Model ##############
     linkageType = 'average'
     newData = data[:]
-    tracymodel = AgglomerativeClustering(linkage=linkageType, n_clusters=8)
+    tracymodel = AgglomerativeClustering(linkage=linkageType, n_clusters=3)
     
     npDataArray = np.array(newData)
 
@@ -62,7 +62,7 @@ def plotData(plotData, title, labels, avgLabels, figureNum):
     cbar.ax.get_yaxis().labelpad = 15
     cbar.ax.set_ylabel('# in each cluster with average cpu/mem', rotation=270)
 
-    plt.show()
+    plt.savefig(str(figureNum)+'.png')
 
 def sortLabels(data, labels, num):
     memCpuByLabel = {}
