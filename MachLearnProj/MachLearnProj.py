@@ -30,25 +30,20 @@ for idx, item in enumerate(util.column(data, head.index('failed'))):
         memIndex = head.index('mem')
         projIndex = head.index('project')
         clockIndex = head.index('ru_wallclock')
-        #maxvmemIndex = head.index('maxvmem')
         ioIndex = head.index('io')
 
-        #subSetData.append([str(data[idx][cpuIndex]), str(data[idx][memIndex]), str(data[idx][projIndex]), str(data[idx][clockIndex]), str(data[idx][maxvmemIndex]), str(data[idx][ioIndex])])
-        subSetData.append([str(data[idx][cpuIndex]), str(data[idx][memIndex]), str(data[idx][projIndex]), str(data[idx][clockIndex]), str(data[idx][ioIndex])])
+        subSetData.append([ \
+            str(data[idx][cpuIndex]),   \
+            str(data[idx][memIndex]),   \
+            str(data[idx][projIndex]),  \
+            str(data[idx][clockIndex]), \
+            str(data[idx][ioIndex])])
 
-
-        
 newData, keyDict = util.convertSymbolic(subSetData, symCols, True)
-
-for idx, item in enumerate(subSetData):
-    print(str(item))
-    print(str(newData[idx]))
-    print(' ')
 
 
 ######### Blake's Model ##############
-
-blakemodel = AgglomerativeClustering(linkage='ward', n_clusters=5)
+blakemodel = AgglomerativeClustering(linkage='complete', n_clusters=5)
 
 npDataArray = np.array(newData)
 
@@ -58,7 +53,7 @@ blakeTimeTaken = time.time() - t
 
 blakelabels = blakemodel.labels_
 
-print(str(blakelabels))
+#print(str(blakelabels))
 
 plt.figure(1)
 plt.scatter(npDataArray[:,0], npDataArray[:,1], c=blakelabels, cmap='Accent')
@@ -92,7 +87,7 @@ tracyTimeTaken = time.time() - t
 
 tracylabels = tracymodel.labels_
 
-print(str(tracylabels))
+#print(str(tracylabels))
 
 plt.figure(2)
 plt.scatter(npDataArray[:,0], npDataArray[:,1], c=tracylabels, cmap='Accent')
