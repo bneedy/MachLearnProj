@@ -8,8 +8,9 @@ from multiprocessing import Process
 
 def blakesClustering(data):
     ######### Blake's Model ##############
+    linkageType = 'complete'
     newData = data[:]
-    blakemodel = AgglomerativeClustering(linkage='complete', n_clusters=8)
+    blakemodel = AgglomerativeClustering(linkage=linkageType, n_clusters=8)
 
     npDataArray = np.array(newData)
 
@@ -18,33 +19,15 @@ def blakesClustering(data):
     blakeTimeTaken = time.time() - t
 
     blakelabels = blakemodel.labels_
-
-    plt.figure(1)
-    plt.scatter(npDataArray[:,0], npDataArray[:,1], c=blakelabels, cmap='Accent')
-    plt.title("Ward clustering in " + str(blakeTimeTaken) + " s")
-    plt.xlabel('CPU')
-    plt.ylabel('Memory')
-    plt.colorbar()
-
-    memCpuByLabel = {}
-    for idx, item in enumerate(newData):
-        if blakelabels[idx] not in memCpuByLabel:
-            memCpuByLabel[blakelabels[idx]] = []
-
-        memCpuByLabel[blakelabels[idx]].append(newData[idx,0] + newData[idx,1])
-
-    labelAverages = {}
-    for label in memCpuByLabel:
-        labelAverages[label] = np.mean(memCpuByLabel[label])
-
-    print('CPU/Mem Averages by label for Blake Model: ')
-    print(labelAverages)
-    plt.show()
+    title = "Clustering " + str(len(npDataArray)) + " data points by " + linkageType + " in " + str(round(blakeTimeTaken, 3)) + " sec"
+    blakelabels = sortLabels(newData, blakelabels, 2)
+    plotData(npDataArray, title, blakelabels, 1)
 
 def tracysClustering(data):
     ######### Tracy's Model ##############
+    linkageType = 'average'
     newData = data[:]
-    tracymodel = AgglomerativeClustering(linkage='average', n_clusters=8)
+    tracymodel = AgglomerativeClustering(linkage=linkageType, n_clusters=8)
     
     npDataArray = np.array(newData)
 
@@ -53,30 +36,52 @@ def tracysClustering(data):
     tracyTimeTaken = time.time() - t
 
     tracylabels = tracymodel.labels_
+    title = "Clustering " + str(len(npDataArray)) + " data points by " + linkageType + " in " + str(round(tracyTimeTaken, 3)) + " sec"
+    tracylabels = sortLabels(newData, tracylabels, 2)
+    plotData(npDataArray, title, tracylabels, 2)
 
-    plt.figure(2)
-    plt.scatter(npDataArray[:,0], npDataArray[:,1], c=tracylabels, cmap='Accent')
-    plt.title("Average clustering in " + str(tracyTimeTaken) + " s")
+
+def plotData(plotData, title, labels, figureNum):
+    plt.figure(figureNum)
+    plt.scatter(plotData[:,0], plotData[:,1], c=labels, cmap='Accent')
+    plt.title(title)
     plt.xlabel('CPU')
     plt.ylabel('Memory')
     plt.colorbar()
+    plt.show()
 
-
+def sortLabels(data, labels, num):
     memCpuByLabel = {}
-    for idx, item in enumerate(newData):
-        if tracylabels[idx] not in memCpuByLabel:
-            memCpuByLabel[tracylabels[idx]] = []
+    for idx, item in enumerate(data):
+        if labels[idx] not in memCpuByLabel:
+            memCpuByLabel[labels[idx]] = []
 
-        memCpuByLabel[tracylabels[idx]].append(newData[idx,0] + newData[idx,1])
+        memCpuByLabel[labels[idx]].append(data[idx,0] + data[idx,1])
 
     labelAverages = {}
     for label in memCpuByLabel:
         labelAverages[label] = np.mean(memCpuByLabel[label])
 
-    print('CPU/Mem Averages by label for Tracy Model: ')
-    print(labelAverages)
-    plt.show()
-  
+    #print('CPU/Mem Averages by label for figure' + str(num) + ': ')
+    #print(labelAverages)
+
+    # Sort labels from min to max
+    minToMaxList = [0] * len(labelAverages.keys())
+    swapDict = {}
+
+    for key in labelAverages.keys():
+        minToMaxList[int(key)] = labelAverages[key]
+    
+    minToMaxList.sort()
+
+    for key in labelAverages.keys():
+        swapDict[key] = minToMaxList.index(labelAverages[key])
+
+    newLabels = []
+    for item in labels:
+        newLabels.append(swapDict[item])
+
+    return newLabels
 
 if __name__ == '__main__':
     if getpass.getuser() == 'blake':
