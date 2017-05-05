@@ -4,10 +4,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import getpass
 from sklearn.cluster import AgglomerativeClustering
-from multiprocessing import Process
+from multiprocessing import Process, Queue
 import sys
 
-def blakesClustering(data, clustCount, num):
+def blakesClustering(data, clustCount, num, beocatFlag, outputQ):
     ######### Blake's Model ##############
     linkageType = 'complete'
     newData = data[:]
@@ -22,9 +22,10 @@ def blakesClustering(data, clustCount, num):
     blakelabels = blakemodel.labels_
     title = "Clustering " + str(len(npDataArray)) + " data points into " + str(clustCount) + " clusters using " + linkageType + " in " + str(round(blakeTimeTaken, 3)) + " sec"
     blakelabels, avgs = sortLabels(newData, blakelabels)
-    plotData(npDataArray, title, blakelabels, avgs, num)
+    plotData(npDataArray, title, blakelabels, avgs, num, beocatFlag)
+    outputQ.put(blakelabels)
 
-def tracysClustering(data, clustCount, num):
+def tracysClustering(data, clustCount, num, beocatFlag, outputQ):
     ######### Tracy's Model ##############
     linkageType = 'average'
     newData = data[:]
@@ -39,10 +40,11 @@ def tracysClustering(data, clustCount, num):
     tracylabels = tracymodel.labels_
     title = "Clustering " + str(len(npDataArray)) + " data points into " + str(clustCount) + " clusters using " + linkageType + " in " + str(round(tracyTimeTaken, 3)) + " sec"
     tracylabels, avgs = sortLabels(newData, tracylabels)
-    plotData(npDataArray, title, tracylabels, avgs, num)
+    plotData(npDataArray, title, tracylabels, avgs, num, beocatFlag)
+    outputQ.put(tracylabels)
 
 
-def plotData(plotData, title, labels, avgLabels, figureNum):
+def plotData(plotData, title, labels, avgLabels, figureNum, beocatFlag):
     plt.figure(num=figureNum, figsize=(9,6), dpi=150)
     cmap = plt.cm.jet
     cmaplist = [cmap(i) for i in range(cmap.N)]
@@ -67,9 +69,11 @@ def plotData(plotData, title, labels, avgLabels, figureNum):
 
     cbar.ax.get_yaxis().labelpad = 15
     cbar.ax.set_ylabel('# in each cluster with average cpu/mem', rotation=270)
-    plt.savefig('C:\\MyDrive\\Transporter\\KSU Shared\\2017\\CIS 732\\Projects\\tmp2\\Figure_' + str(figureNum))
-    #plt.savefig('/homes/knedler/figures1/Figure_' + str(figureNum))
-    #plt.show()
+
+    if not beocatFlag:
+        plt.savefig('C:\\MyDrive\\Transporter\\KSU Shared\\2017\\CIS 732\\Projects\\tmp4\\Figure_' + str(figureNum))
+    else:
+        plt.savefig('/homes/knedler/figures1/Figure_' + str(figureNum))
 
 def sortLabels(data, labels):
     memCpuByLabel = {}
@@ -108,6 +112,7 @@ def sortLabels(data, labels):
 if __name__ == '__main__':
     
     beocatFlag = False
+
     if not beocatFlag:
         if getpass.getuser() == 'blake':
             GLOBAL_DATA_PATH='C:\\MyDrive\\Transporter\\KSU Shared\\2017\\CIS 732\\Projects\\'
@@ -115,28 +120,35 @@ if __name__ == '__main__':
             GLOBAL_DATA_PATH='K:\\Tracy Marshall\\Transporter\\KSU Masters\\2017\\CIS 732\\Projects\\'
         filename = GLOBAL_DATA_PATH + 'acct_table_tiny.txt'
         filename = GLOBAL_DATA_PATH + 'acctg_small'
+        filename = GLOBAL_DATA_PATH + 'accounting'
     
     else:
         GLOBAL_DATA_PATH = '/homes/knedler/'
         filename = GLOBAL_DATA_PATH + 'acctg'
 
-    acctData = util.stripAcctFileHeader(filename)
+    acctData = util.stripAcctFileHeader(filename,10000)
+
+    # Output from processes
+    out_blake = Queue()
+    out_tracy = Queue()
+    blakeOutput = []
+    tracyOutput = []
 
     # Data with feature selection
     subSetData = []
+    subSetDataHeader = ['cpu', 'mem', 'project', 'ru_wallclock', 'io']
 
     # List of symbolic columns
     symCols = [2]
 
     # Cluster count
-    clustCounts = [3, 4, 5, 6, 7, 8]
+    clustCounts = [5] #[3, 4, 5, 6, 7, 8]
     
     # read in data
-    beocatFlag = True
-    if not beocatFlag:
-        data, head = util.readData(filename) # for personal...
-    else:
-        data, head = util.readData(acctData, False) # for beocat...
+    #if not beocatFlag:
+    #    data, head = util.readData(filename) # for personal...
+    #else:
+    data, head = util.readData(acctData, False) # for beocat...
 
     for idx, item in enumerate(util.column(data, head.index('failed'))):
         if int(item) == 0:
@@ -159,18 +171,32 @@ if __name__ == '__main__':
     tracyProcs = []
 
     for i, clustCount in enumerate(clustCounts):
-        blakeProcs.append(Process(target=blakesClustering, args=(newData,clustCount, (i*2)+1)))
-        tracyProcs.append(Process(target=tracysClustering, args=(newData,clustCount, (i*2)+2)))
+        blakeProcs.append(Process(target=blakesClustering, args=(newData,clustCount, (i*2)+1, beocatFlag, out_blake, )))
+        tracyProcs.append(Process(target=tracysClustering, args=(newData,clustCount, (i*2)+2, beocatFlag, out_tracy, )))
         
     print("Starting multi processor cluster...")
     procTime = time.time()
-    for i in range(min(len(blakeProcs), len(tracyProcs))):
-        blakeProcs[i].start()
-        tracyProcs[i].start()
 
-    for i in range(min(len(blakeProcs), len(tracyProcs))):
-        blakeProcs[i].join()
-        tracyProcs[i].join()
+    if beocatFlag:
+        for i in range(min(len(blakeProcs), len(tracyProcs))):
+            blakeProcs[i].start()
+            tracyProcs[i].start()
+
+        for i in range(min(len(blakeProcs), len(tracyProcs))):
+            blakeOutput.append(out_blake.get())
+            blakeProcs[i].join()
+            tracyOutput.append(out_tracy.get())
+            tracyProcs[i].join()
+
+    else:
+        for i in range(min(len(blakeProcs), len(tracyProcs))):
+            blakeProcs[i].start()
+            blakeOutput.append(out_blake.get())
+            blakeProcs[i].join()
+
+            tracyProcs[i].start()
+            tracyOutput.append(out_tracy.get())
+            tracyProcs[i].join()
 
     # Dependent on time to close plots...
     endTime = time.time() - procTime

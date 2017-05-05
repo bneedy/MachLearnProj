@@ -45,15 +45,22 @@ def convertSymbolic(data, symCol, normalizeFlag=False):
 
     return normalizeData(tmpData,normalizeFlag), enumerations
 
-def stripAcctFileHeader(filename):
+def stripAcctFileHeader(filename, count=100000):
     header = "qname:hostname:group:owner:job_name:job_number:account:priority:submission_time:\
     start_time:end_time:failed:exit_status:ru_wallclock:ru_utime:ru_stime:ru_maxrss:ru_ixrss:ru_ismrss:\
     ru_idrss:ru_isrss:ru_minflt:ru_majflt:ru_nswap:ru_inblock:ru_oublock:ru_msgsnd:ru_msgrcv:ru_nsignals:\
     ru_nvcsw:ru_nivcsw:project:department:granted_pe:slots:task_number:cpu:mem:io:category:iow:pe_taskid:\
     maxvmem:arid:ar_submission_time\n"
 
+    num = 0
+    output = []
     with open(filename) as fin:
-        output = fin.readlines()
+        for line in fin:
+            if line[0] != '#':
+                output.append(line)
+                num += 1
+            if num >= count:
+                break
 
     retVal = []
     retVal.append(header.replace(":",": "))
