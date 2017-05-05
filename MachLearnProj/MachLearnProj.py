@@ -77,10 +77,13 @@ def plotData(plotData, title, labels, avgLabels, figureNum, beocatFlag):
     cbar.ax.get_yaxis().labelpad = 15
     cbar.ax.set_ylabel('# in each cluster with average cpu/mem', rotation=270)
 
-    if not beocatFlag:
+    if beocatFlag:
+        plt.savefig('/homes/knedler/figures1/Figure_' + str(figureNum))
+    elif getpass.getuser() == 'blake':
         plt.savefig('C:\\MyDrive\\Transporter\\KSU Shared\\2017\\CIS 732\\Projects\\tmp4\\Figure_' + str(figureNum))
     else:
-        plt.savefig('/homes/knedler/figures1/Figure_' + str(figureNum))
+        plt.savefig(str(figureNum)+'.png')
+
 
 def sortLabels(data, labels):
     memCpuByLabel = {}
