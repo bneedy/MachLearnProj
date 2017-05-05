@@ -3,7 +3,14 @@ import time
 import matplotlib.pyplot as plt
 import numpy as np
 import getpass
+import warnings
+from sklearn import metrics
 from sklearn.cluster import AgglomerativeClustering
+from sklearn.model_selection import KFold
+from sklearn import svm
+from sklearn.neural_network import MLPClassifier
+from sklearn.preprocessing import MultiLabelBinarizer
+from sklearn.multiclass import OneVsRestClassifier
 from multiprocessing import Process, Queue
 import sys
 
@@ -109,9 +116,20 @@ def sortLabels(data, labels):
 
     return newLabels, newLabelAverages
 
+def performSupervisedLearning(X_train, X_test, y_train, y_test):
+    #clf = OneVsRestClassifier(svm.SVC(probability=True))
+    clf = MLPClassifier()
+    
+    clf.fit(X_train, y_train)
+    predictions = clf.predict(X_test)
+    
+    my_metrics = metrics.classification_report( y_test, predictions)
+    print(my_metrics)
+
 if __name__ == '__main__':
     
     beocatFlag = False
+    dataPoints = 1500
 
     if not beocatFlag:
         if getpass.getuser() == 'blake':
@@ -126,7 +144,7 @@ if __name__ == '__main__':
         GLOBAL_DATA_PATH = '/homes/knedler/'
         filename = GLOBAL_DATA_PATH + 'acctg'
 
-    acctData = util.stripAcctFileHeader(filename,10000)
+    acctData = util.stripAcctFileHeader(filename,dataPoints)
 
     # Output from processes
     out_blake = Queue()
@@ -171,8 +189,8 @@ if __name__ == '__main__':
     tracyProcs = []
 
     for i, clustCount in enumerate(clustCounts):
-        blakeProcs.append(Process(target=blakesClustering, args=(newData,clustCount, (i*2)+1, beocatFlag, out_blake, )))
-        tracyProcs.append(Process(target=tracysClustering, args=(newData,clustCount, (i*2)+2, beocatFlag, out_tracy, )))
+        blakeProcs.append(Process(target=blakesClustering, args=(newData, clustCount, (i*2)+1, beocatFlag, out_blake, )))
+        tracyProcs.append(Process(target=tracysClustering, args=(newData, clustCount, (i*2)+2, beocatFlag, out_tracy, )))
         
     print("Starting multi processor cluster...")
     procTime = time.time()
@@ -201,3 +219,53 @@ if __name__ == '__main__':
     # Dependent on time to close plots...
     endTime = time.time() - procTime
     print("Time to process was " + str(endTime) + " seconds.")
+
+    dataWithoutCluster = []
+    dataClustered = []
+    answers = []
+
+    # Build up lists with data with and without cluster information
+    for i, item in enumerate(newData):
+        withoutClust = []
+        withClust = []
+        ans = []
+
+        for j, feat in enumerate(item):
+            if j == subSetDataHeader.index('mem') or j == subSetDataHeader.index('cpu'):
+                ans.append(feat)
+            else:
+                withoutClust.append(feat)
+                withClust.append(feat)
+
+        withClust.append(blakeOutput[0][i])
+
+        dataWithoutCluster.append(withoutClust)
+        dataClustered.append(withClust)
+        answers.append(ans)
+
+    # Put data into numpy arrays to process
+    dataWithoutCluster = np.array(dataWithoutCluster)
+    dataClustered = np.array(dataClustered)
+
+    mlb = MultiLabelBinarizer()
+    answers_enc = mlb.fit_transform(np.array(answers))
+
+    warnings.simplefilter("ignore", UserWarning)
+
+    # Perform on data without clusters
+    kf = KFold(n_splits=5)
+    for k, (train, test) in enumerate(kf.split(dataWithoutCluster, answers_enc)):
+        #print("K:%s - %s %s" % (k, train, test))
+
+        X_train, X_test, y_train, y_test = dataWithoutCluster[train], dataWithoutCluster[test], answers_enc[train], answers_enc[test]
+        
+        performSupervisedLearning(X_train, X_test, y_train, y_test)
+
+    # Perform on data with clusters
+    kf = KFold(n_splits=5)
+    for k, (train, test) in enumerate(kf.split(dataClustered, answers_enc)):
+        #print("K:%s - %s %s" % (k, train, test))
+
+        X_train, X_test, y_train, y_test = dataClustered[train], dataClustered[test], answers_enc[train], answers_enc[test]
+
+        performSupervisedLearning(X_train, X_test, y_train, y_test)
