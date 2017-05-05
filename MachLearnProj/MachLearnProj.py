@@ -5,6 +5,38 @@ import numpy as np
 import getpass
 from sklearn.cluster import AgglomerativeClustering
 from multiprocessing import Process
+from sklearn.model_selection import KFold
+
+
+def supervisedLearning(data, xStart, xStop, yStart, yStop):
+    
+    print data
+
+    Ndata = np.array(data)
+
+    kf = KFold(n_splits=5)
+
+    for trainIndex, testIndex in kf.split(data):
+        #print("Train x: %s Train y: %s Test x: %s Test y: %s" % (train[xStart:xStop][:], train[:][yStart:yStop], test[:][xStart:xStop], test[:][yStart:yStop]))
+        #print("Train x: %s Train y: %s Test x: %s Test y: %s" % (train, train, test, test))
+        #xTrain, xTest = data[trainIndex][xStart:xStop], data[testIndex][xStart:xStop]
+        #yTrain, yTest = data[trainIndex][yStart:yStop], data[testIndex][yStart:yStop]
+
+        ntri = np.array(trainIndex)
+        ntei = np.array(testIndex)
+
+        xTrain = Ndata[ntri]
+
+        print('X Train')
+        print xTrain
+        #print('X Test')
+        #print xTest
+        #print('Y Train')
+        #print yTrain
+        #print('Y Test')
+        #print yTest
+
+
 
 def blakesClustering(data, clustCount, num):
     ######### Blake's Model ##############
@@ -120,6 +152,12 @@ if __name__ == '__main__':
     # Cluster count
     clustCounts = [3, 4, 5, 6, 7, 8]
 
+    # Target columsn for supervised learning
+    xStart = 2
+    xStop = 4
+    yStart = 0
+    yStop = 1
+
     # read in data
     data, head = util.readData(filename)
 
@@ -137,6 +175,10 @@ if __name__ == '__main__':
                 str(data[idx][projIndex]),  \
                 str(data[idx][clockIndex]), \
                 str(data[idx][ioIndex])])
+
+    newData, keyDict = util.convertSymbolic(subSetData, symCols, False)
+
+    supervisedLearning(newData,xStart, xStop, yStart, yStop)
 
     newData, keyDict = util.convertSymbolic(subSetData, symCols, True)
 
