@@ -154,10 +154,11 @@ if __name__ == '__main__':
     if not beocatFlag:
         if getpass.getuser() == 'blake':
             GLOBAL_DATA_PATH='C:\\MyDrive\\Transporter\\KSU Shared\\2017\\CIS 732\\Projects\\'
+            figurePath = GLOBAL_DATA_PATH + 'FIGURES\\Blake\\'
         else:
             GLOBAL_DATA_PATH='K:\\Tracy Marshall\\Transporter\\KSU Masters\\2017\\CIS 732\\Projects\\'
+            figurePath = GLOBAL_DATA_PATH + 'FIGURES\\Tracy\\'
         
-        figurePath = GLOBAL_DATA_PATH + 'FIGURES\\'
         filename = GLOBAL_DATA_PATH + 'accounting'
     
     else:
