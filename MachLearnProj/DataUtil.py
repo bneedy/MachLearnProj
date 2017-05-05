@@ -1,8 +1,12 @@
 import csv
+import numpy as np
 from sklearn.preprocessing import normalize
 
-def column(matrix, i):
-    return [row[i] for row in matrix]
+def column(matrix, i, npArray=False):
+    if npArray:
+        return np.array([row[i] for row in matrix])
+    else:
+        return [row[i] for row in matrix]
 
 def normalizeData(origData, normalizeFlag=True):
     if normalizeFlag:

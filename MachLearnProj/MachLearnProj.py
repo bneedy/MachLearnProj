@@ -3,18 +3,15 @@ import time
 import matplotlib.pyplot as plt
 import numpy as np
 import getpass
-import warnings
+import argparse
 from sklearn import metrics
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.model_selection import KFold
-from sklearn import svm
-from sklearn.neural_network import MLPClassifier
-from sklearn.preprocessing import MultiLabelBinarizer
-from sklearn.multiclass import OneVsRestClassifier
+from sklearn.svm import SVR
+from sklearn.multioutput import MultiOutputClassifier
 from multiprocessing import Process, Queue
-import sys
 
-def blakesClustering(data, clustCount, num, beocatFlag, outputQ):
+def blakesClustering(data, clustCount, num, path, outputQ):
     ######### Blake's Model ##############
     linkageType = 'complete'
     newData = data[:]
@@ -27,12 +24,13 @@ def blakesClustering(data, clustCount, num, beocatFlag, outputQ):
     blakeTimeTaken = time.time() - t
 
     blakelabels = blakemodel.labels_
-    title = "Clustering " + str(len(npDataArray)) + " data points into " + str(clustCount) + " clusters using " + linkageType + " in " + str(round(blakeTimeTaken, 3)) + " sec"
+    title = "Clustering " + str(len(npDataArray)) + " data points into " + str(clustCount) + \
+        " clusters using " + linkageType + " in " + str(round(blakeTimeTaken, 3)) + " sec"
     blakelabels, avgs = sortLabels(newData, blakelabels)
-    plotData(npDataArray, title, blakelabels, avgs, num, beocatFlag)
+    plotData(npDataArray, title, blakelabels, avgs, num, path)
     outputQ.put(blakelabels)
 
-def tracysClustering(data, clustCount, num, beocatFlag, outputQ):
+def tracysClustering(data, clustCount, num, path, outputQ):
     ######### Tracy's Model ##############
     linkageType = 'average'
     newData = data[:]
@@ -45,13 +43,14 @@ def tracysClustering(data, clustCount, num, beocatFlag, outputQ):
     tracyTimeTaken = time.time() - t
 
     tracylabels = tracymodel.labels_
-    title = "Clustering " + str(len(npDataArray)) + " data points into " + str(clustCount) + " clusters using " + linkageType + " in " + str(round(tracyTimeTaken, 3)) + " sec"
+    title = "Clustering " + str(len(npDataArray)) + " data points into " + str(clustCount) + \
+        " clusters using " + linkageType + " in " + str(round(tracyTimeTaken, 3)) + " sec"
     tracylabels, avgs = sortLabels(newData, tracylabels)
-    plotData(npDataArray, title, tracylabels, avgs, num, beocatFlag)
+    plotData(npDataArray, title, tracylabels, avgs, num, path)
     outputQ.put(tracylabels)
 
 
-def plotData(plotData, title, labels, avgLabels, figureNum, beocatFlag):
+def plotData(plotData, title, labels, avgLabels, figureNum, path):
     plt.figure(num=figureNum, figsize=(9,6), dpi=150)
     cmap = plt.cm.jet
     cmaplist = [cmap(i) for i in range(cmap.N)]
@@ -77,10 +76,7 @@ def plotData(plotData, title, labels, avgLabels, figureNum, beocatFlag):
     cbar.ax.get_yaxis().labelpad = 15
     cbar.ax.set_ylabel('# in each cluster with average cpu/mem', rotation=270)
 
-    if not beocatFlag:
-        plt.savefig('C:\\MyDrive\\Transporter\\KSU Shared\\2017\\CIS 732\\Projects\\tmp4\\Figure_' + str(figureNum))
-    else:
-        plt.savefig('/homes/knedler/figures1/Figure_' + str(figureNum))
+    plt.savefig(path + 'Figure_' + str(figureNum))
 
 def sortLabels(data, labels):
     memCpuByLabel = {}
@@ -116,33 +112,61 @@ def sortLabels(data, labels):
 
     return newLabels, newLabelAverages
 
-def performSupervisedLearning(X_train, X_test, y_train, y_test):
-    #clf = OneVsRestClassifier(svm.SVC(probability=True))
-    clf = MLPClassifier()
+def performSupervisedLearning(type, data, answers, memLoc, cpuLoc, split=5):
+    kf = KFold(n_splits=split)
+    for k, (train, test) in enumerate(kf.split(data, answers)):
+        #print("K:%s - %s %s" % (k, train, test))
+
+        X_train, X_test, y_train, y_test = data[train], data[test], answers[train], answers[test]
+
+        clf = MultiOutputClassifier(SVR(cache_size=1000))
     
-    clf.fit(X_train, y_train)
-    predictions = clf.predict(X_test)
+        clf.fit(X_train, y_train)
+        predictions = clf.predict(X_test)
     
-    my_metrics = metrics.classification_report( y_test, predictions)
-    print(my_metrics)
+        r2_metrics = metrics.r2_score(y_test, predictions, multioutput='uniform_average')
+        meanSquareError = metrics.mean_squared_error(y_test, predictions, multioutput='uniform_average')
+        explainedVariance = metrics.explained_variance_score(y_test, predictions, multioutput='uniform_average')
+
+        print('-------------')
+        print('Metrics for:                ' + str(type))
+        print('R2 Metrics:                 ' + str(r2_metrics))
+        print('Mean Squared Error Metrics: ' + str(meanSquareError))
+        print('Explained Variance Metrics: ' + str(explainedVariance))
+        print('-------------')
+
+
 
 if __name__ == '__main__':
-    
-    beocatFlag = False
-    dataPoints = 1500
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-b', '--beocat', type=bool, default=False, nargs=1, help='flag to run multiprocessing more intensively')
+    parser.add_argument('-dp', '--dataPoints', type=int, default=1500, nargs=1, help='number of datapoints to use')
+    parser.add_argument('-p', '--dataPath', type=str, default='', nargs=1, help='path to the data')
+    parser.add_argument('-fp', '--figurePath', type=str, default='', nargs=1, help='path to save the figures')
+    args = parser.parse_args()
+
+    beocatFlag = args.beocat
+    dataPoints = args.dataPoints
+    figurePath = args.figurePath
+    GLOBAL_DATA_PATH = args.dataPath
 
     if not beocatFlag:
         if getpass.getuser() == 'blake':
             GLOBAL_DATA_PATH='C:\\MyDrive\\Transporter\\KSU Shared\\2017\\CIS 732\\Projects\\'
         else:
             GLOBAL_DATA_PATH='K:\\Tracy Marshall\\Transporter\\KSU Masters\\2017\\CIS 732\\Projects\\'
-        filename = GLOBAL_DATA_PATH + 'acct_table_tiny.txt'
-        filename = GLOBAL_DATA_PATH + 'acctg_small'
+        
+        figurePath = GLOBAL_DATA_PATH + 'FIGURES\\'
         filename = GLOBAL_DATA_PATH + 'accounting'
     
     else:
         GLOBAL_DATA_PATH = '/homes/knedler/'
+        figurePath = GLOBAL_DATA_PATH + 'figures1/'
         filename = GLOBAL_DATA_PATH + 'acctg'
+
+    if figurePath == '':
+        figurePath = GLOBAL_DATA_PATH
 
     acctData = util.stripAcctFileHeader(filename,dataPoints)
 
@@ -160,12 +184,8 @@ if __name__ == '__main__':
     symCols = [2]
 
     # Cluster count
-    clustCounts = [5] #[3, 4, 5, 6, 7, 8]
-    
-    # read in data
-    #if not beocatFlag:
-    #    data, head = util.readData(filename) # for personal...
-    #else:
+    clustCounts = [5, 6] #[3, 4, 5, 6, 7, 8
+
     data, head = util.readData(acctData, False) # for beocat...
 
     for idx, item in enumerate(util.column(data, head.index('failed'))):
@@ -185,12 +205,14 @@ if __name__ == '__main__':
 
     newData, keyDict = util.convertSymbolic(subSetData, symCols, True)
 
+    del subSetData
+
     blakeProcs = []
     tracyProcs = []
 
     for i, clustCount in enumerate(clustCounts):
-        blakeProcs.append(Process(target=blakesClustering, args=(newData, clustCount, (i*2)+1, beocatFlag, out_blake, )))
-        tracyProcs.append(Process(target=tracysClustering, args=(newData, clustCount, (i*2)+2, beocatFlag, out_tracy, )))
+        blakeProcs.append(Process(target=blakesClustering, args=(newData, clustCount, (i*2)+1, figurePath, out_blake, )))
+        tracyProcs.append(Process(target=tracysClustering, args=(newData, clustCount, (i*2)+2, figurePath, out_tracy, )))
         
     print("Starting multi processor cluster...")
     procTime = time.time()
@@ -221,51 +243,79 @@ if __name__ == '__main__':
     print("Time to process was " + str(endTime) + " seconds.")
 
     dataWithoutCluster = []
-    dataClustered = []
+    dataClustered_blake = []
+    dataClustered_tracy = []
     answers = []
+    memLoc = 0
+    cpuLoc = 0
 
-    # Build up lists with data with and without cluster information
-    for i, item in enumerate(newData):
-        withoutClust = []
-        withClust = []
-        ans = []
+    for curr, clusterCount in enumerate(clustCounts):
+        dataClustered_blake.append([])
+        dataClustered_tracy.append([])
+        # Build up lists with data with and without cluster information
+        for i, item in enumerate(newData):
 
-        for j, feat in enumerate(item):
-            if j == subSetDataHeader.index('mem') or j == subSetDataHeader.index('cpu'):
-                ans.append(feat)
-            else:
-                withoutClust.append(feat)
-                withClust.append(feat)
+            withClust = []
 
-        withClust.append(blakeOutput[0][i])
+            if curr == 0:
+                withoutClust = []
+                ans = []
 
-        dataWithoutCluster.append(withoutClust)
-        dataClustered.append(withClust)
-        answers.append(ans)
+            for j, feat in enumerate(item):
+                if curr == 0 and (j == subSetDataHeader.index('mem') or j == subSetDataHeader.index('cpu')):
+                    if memLoc == 0 and cpuLoc == 0:
+                        if j == subSetDataHeader.index('mem'):
+                            cpuLoc = 1
+                        else:
+                            memLoc = 1
+                    ans.append(feat)
+                else:
+                    if curr == 0:
+                        withoutClust.append(feat)
+                    withClust.append(feat)
+                    
+            if curr == 0:
+                dataWithoutCluster.append(withoutClust)
+                answers.append(ans)
 
-    # Put data into numpy arrays to process
-    dataWithoutCluster = np.array(dataWithoutCluster)
-    dataClustered = np.array(dataClustered)
+            dataClustered_blake[curr].append(withClust)
+            dataClustered_blake[curr][len(dataClustered_blake[curr]) - 1].append(blakeOutput[curr][i])
 
-    mlb = MultiLabelBinarizer()
-    answers_enc = mlb.fit_transform(np.array(answers))
+            dataClustered_tracy[curr].append(withClust)
+            dataClustered_tracy[curr][len(dataClustered_tracy[curr]) - 1].append(tracyOutput[curr][i])
 
-    warnings.simplefilter("ignore", UserWarning)
 
-    # Perform on data without clusters
-    kf = KFold(n_splits=5)
-    for k, (train, test) in enumerate(kf.split(dataWithoutCluster, answers_enc)):
-        #print("K:%s - %s %s" % (k, train, test))
+    del newData
 
-        X_train, X_test, y_train, y_test = dataWithoutCluster[train], dataWithoutCluster[test], answers_enc[train], answers_enc[test]
-        
-        performSupervisedLearning(X_train, X_test, y_train, y_test)
+    # Create list of processes to run supervised learning...
+    if beocatFlag:
+        supervisedLearningProcs = []
 
-    # Perform on data with clusters
-    kf = KFold(n_splits=5)
-    for k, (train, test) in enumerate(kf.split(dataClustered, answers_enc)):
-        #print("K:%s - %s %s" % (k, train, test))
+        supervisedLearningProcs.append(Process(target=performSupervisedLearning, \
+            args=("Non-Clustered.", np.array(dataWithoutCluster), np.array(answers), \
+            memLoc, cpuLoc, )))
 
-        X_train, X_test, y_train, y_test = dataClustered[train], dataClustered[test], answers_enc[train], answers_enc[test]
+        for i, item in enumerate(clustCounts):
+            supervisedLearningProcs.append(Process(target=performSupervisedLearning, \
+                args=("Clustered with Blakes and " + str(item) +" clusters.", np.array(dataClustered_blake[i]), np.array(answers), \
+                memLoc, cpuLoc, )))
+            supervisedLearningProcs.append(Process(target=performSupervisedLearning, \
+                args=("Clustered with Tracys and " + str(item) +" clusters.", np.array(dataClustered_tracy[i]), np.array(answers), \
+                memLoc, cpuLoc, )))
 
-        performSupervisedLearning(X_train, X_test, y_train, y_test)
+    
+            for i in range(len(supervisedLearningProcs)):
+                supervisedLearningProcs[i].start()
+            
+            for i in range(len(supervisedLearningProcs)):
+                supervisedLearningProcs[i].join()
+
+    else:
+        performSupervisedLearning("Non-Clustered.", np.array(dataWithoutCluster), np.array(answers), memLoc, cpuLoc)
+        for i, item in enumerate(clustCounts):
+            performSupervisedLearning("Clustered with Blakes and " + str(item) +" clusters.", \
+                np.array(dataClustered_blake[i]), np.array(answers), \
+                memLoc, cpuLoc)
+            performSupervisedLearning("Clustered with Tracys and " + str(item) +" clusters.", \
+                np.array(dataClustered_tracy[i]), np.array(answers), \
+                memLoc, cpuLoc)
