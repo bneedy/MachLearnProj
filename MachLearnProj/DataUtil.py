@@ -45,13 +45,47 @@ def convertSymbolic(data, symCol, normalizeFlag=False):
 
     return normalizeData(tmpData,normalizeFlag), enumerations
 
-def readData(filename, dataInDict=False):
+def stripAcctFileHeader(filename):
+    header = "qname:hostname:group:owner:job_name:job_number:account:priority:submission_time:\
+    start_time:end_time:failed:exit_status:ru_wallclock:ru_utime:ru_stime:ru_maxrss:ru_ixrss:ru_ismrss:\
+    ru_idrss:ru_isrss:ru_minflt:ru_majflt:ru_nswap:ru_inblock:ru_oublock:ru_msgsnd:ru_msgrcv:ru_nsignals:\
+    ru_nvcsw:ru_nivcsw:project:department:granted_pe:slots:task_number:cpu:mem:io:category:iow:pe_taskid:\
+    maxvmem:arid:ar_submission_time\n"
+
+    with open(filename) as fin:
+        output = fin.readlines()
+
+    retVal = []
+    retVal.append(header.replace(":",": "))
+    for item in output:
+        retVal.append(item.replace(":",": "))
+
+    return retVal
+
+def readData(dataStream, isFile=True, dataInDict=False):
     header = []
     data = []
     dataDict = {}
-
-    with open(filename) as fin:
-        csvData = csv.reader(fin, delimiter=':')
+    
+    if isFile:
+        with open(dataStream) as fin:
+            csvData = csv.reader(fin, delimiter=':')
+            headerFlag = True
+            for rowNum, row in enumerate(csvData):
+                if headerFlag:
+                    for item in list(row):
+                        header.append(str(item).strip())
+                        if dataInDict:
+                            dataDict[str(item).strip()] = []
+                    headerFlag = False
+                else:
+                    if dataInDict:
+                        for i, item in enumerate(list(row)):
+                            dataDict[headerList[i]].append(item)
+                    else:
+                        data.append(row)
+    else:
+        csvData = csv.reader(dataStream, delimiter=':')
         headerFlag = True
         for rowNum, row in enumerate(csvData):
             if headerFlag:

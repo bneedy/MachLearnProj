@@ -5,6 +5,7 @@ import numpy as np
 import getpass
 from sklearn.cluster import AgglomerativeClustering
 from multiprocessing import Process
+import sys
 
 def blakesClustering(data, clustCount, num):
     ######### Blake's Model ##############
@@ -66,8 +67,9 @@ def plotData(plotData, title, labels, avgLabels, figureNum):
 
     cbar.ax.get_yaxis().labelpad = 15
     cbar.ax.set_ylabel('# in each cluster with average cpu/mem', rotation=270)
-
-    plt.show()
+    plt.savefig('C:\\MyDrive\\Transporter\\KSU Shared\\2017\\CIS 732\\Projects\\tmp2\\Figure_' + str(figureNum))
+    #plt.savefig('/homes/knedler/figures1/Figure_' + str(figureNum))
+    #plt.show()
 
 def sortLabels(data, labels):
     memCpuByLabel = {}
@@ -104,12 +106,21 @@ def sortLabels(data, labels):
     return newLabels, newLabelAverages
 
 if __name__ == '__main__':
-    if getpass.getuser() == 'blake':
-        GLOBAL_DATA_PATH='C:\\MyDrive\\Transporter\\KSU Shared\\2017\\CIS 732\\Projects\\'
+    
+    beocatFlag = False
+    if not beocatFlag:
+        if getpass.getuser() == 'blake':
+            GLOBAL_DATA_PATH='C:\\MyDrive\\Transporter\\KSU Shared\\2017\\CIS 732\\Projects\\'
+        else:
+            GLOBAL_DATA_PATH='K:\\Tracy Marshall\\Transporter\\KSU Masters\\2017\\CIS 732\\Projects\\'
+        filename = GLOBAL_DATA_PATH + 'acct_table_tiny.txt'
+        filename = GLOBAL_DATA_PATH + 'acctg_small'
+    
     else:
-        GLOBAL_DATA_PATH='K:\\Tracy Marshall\\Transporter\\KSU Masters\\2017\\CIS 732\\Projects\\'
+        GLOBAL_DATA_PATH = '/homes/knedler/'
+        filename = GLOBAL_DATA_PATH + 'acctg'
 
-    filename = GLOBAL_DATA_PATH + 'acct_table_tiny.txt'
+    acctData = util.stripAcctFileHeader(filename)
 
     # Data with feature selection
     subSetData = []
@@ -119,9 +130,13 @@ if __name__ == '__main__':
 
     # Cluster count
     clustCounts = [3, 4, 5, 6, 7, 8]
-
+    
     # read in data
-    data, head = util.readData(filename)
+    beocatFlag = True
+    if not beocatFlag:
+        data, head = util.readData(filename) # for personal...
+    else:
+        data, head = util.readData(acctData, False) # for beocat...
 
     for idx, item in enumerate(util.column(data, head.index('failed'))):
         if int(item) == 0:
