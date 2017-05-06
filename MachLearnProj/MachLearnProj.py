@@ -2,8 +2,8 @@ import DataUtil as util
 import time
 import matplotlib.pyplot as plt
 import numpy as np
-import getpass
 import argparse
+import os, sys
 from sklearn import metrics
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.model_selection import KFold
@@ -133,7 +133,7 @@ def performSupervisedLearning(type, data, answers, memLoc, cpuLoc, split=5):
         print('R2 Metrics:                 ' + str(r2_metrics))
         print('Mean Squared Error Metrics: ' + str(meanSquareError))
         print('Explained Variance Metrics: ' + str(explainedVariance))
-        print('-------------')
+        print('-------------\n')
 
 
 
@@ -142,29 +142,22 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-b', '--beocat', type=bool, default=False, nargs=1, help='flag to run multiprocessing more intensively')
     parser.add_argument('-dp', '--dataPoints', type=int, default=1800, nargs=1, help='number of datapoints to use')
-    parser.add_argument('-p', '--dataPath', type=str, default='', nargs=1, help='path to the data')
-    parser.add_argument('-fp', '--figurePath', type=str, default='', nargs=1, help='path to save the figures')
+    parser.add_argument('-p', '--dataPath', type=str, default=['.\\'], nargs=1, help='\'PATH\' path to the data, must end with slash')
+    parser.add_argument('-fp', '--figurePath', type=str, default=['.\\'], nargs=1, help='\'PATH\' path to save the figures')
+    parser.add_argument('-fn', '--filename', type=str, default='accounting', nargs=1, help='filename of the data')
     args = parser.parse_args()
 
     beocatFlag = args.beocat
     dataPoints = args.dataPoints
-    figurePath = args.figurePath
-    GLOBAL_DATA_PATH = args.dataPath
+    figurePath = os.path.join(os.path.abspath(args.figurePath[0]), '')
+    GLOBAL_DATA_PATH = os.path.join(os.path.abspath(args.dataPath[0]), '')
+    file = args.filename
 
-    if not beocatFlag:
-        if getpass.getuser() == 'blake':
-            GLOBAL_DATA_PATH='C:\\MyDrive\\Transporter\\KSU Shared\\2017\\CIS 732\\Projects\\'
-            figurePath = GLOBAL_DATA_PATH + 'FIGURES\\Blake2\\'
-        else:
-            GLOBAL_DATA_PATH='K:\\Tracy Marshall\\Transporter\\KSU Masters\\2017\\CIS 732\\Projects\\'
-            figurePath = GLOBAL_DATA_PATH + 'FIGURES\\Tracy\\'
-        
-        filename = GLOBAL_DATA_PATH + 'accounting'
-    
-    else:
-        GLOBAL_DATA_PATH = '/homes/knedler/'
-        figurePath = GLOBAL_DATA_PATH + 'figures5/'
-        filename = GLOBAL_DATA_PATH + 'acctg'
+    filename = GLOBAL_DATA_PATH + file
+
+    if not os.path.isfile(filename):
+        print('Incorrect path of filename to data')
+        sys.exit(1)
 
     if figurePath == '':
         figurePath = GLOBAL_DATA_PATH
@@ -187,7 +180,7 @@ if __name__ == '__main__':
     # Cluster count
     clustCounts = [5, 6] #[3, 4, 5, 6, 7, 8]
 
-    data, head = util.readData(acctData, False) # for beocat...
+    data, head = util.readData(acctData, False)
 
     for idx, item in enumerate(util.column(data, head.index('failed'))):
         if int(item) == 0:
