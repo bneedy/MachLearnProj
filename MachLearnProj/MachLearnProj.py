@@ -141,7 +141,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-b', '--beocat', type=bool, default=False, nargs=1, help='flag to run multiprocessing more intensively')
-    parser.add_argument('-dp', '--dataPoints', type=int, default=1500, nargs=1, help='number of datapoints to use')
+    parser.add_argument('-dp', '--dataPoints', type=int, default=1800, nargs=1, help='number of datapoints to use')
     parser.add_argument('-p', '--dataPath', type=str, default='', nargs=1, help='path to the data')
     parser.add_argument('-fp', '--figurePath', type=str, default='', nargs=1, help='path to save the figures')
     args = parser.parse_args()
@@ -154,7 +154,7 @@ if __name__ == '__main__':
     if not beocatFlag:
         if getpass.getuser() == 'blake':
             GLOBAL_DATA_PATH='C:\\MyDrive\\Transporter\\KSU Shared\\2017\\CIS 732\\Projects\\'
-            figurePath = GLOBAL_DATA_PATH + 'FIGURES\\Blake\\'
+            figurePath = GLOBAL_DATA_PATH + 'FIGURES\\Blake2\\'
         else:
             GLOBAL_DATA_PATH='K:\\Tracy Marshall\\Transporter\\KSU Masters\\2017\\CIS 732\\Projects\\'
             figurePath = GLOBAL_DATA_PATH + 'FIGURES\\Tracy\\'
@@ -163,7 +163,7 @@ if __name__ == '__main__':
     
     else:
         GLOBAL_DATA_PATH = '/homes/knedler/'
-        figurePath = GLOBAL_DATA_PATH + 'figures1/'
+        figurePath = GLOBAL_DATA_PATH + 'figures5/'
         filename = GLOBAL_DATA_PATH + 'acctg'
 
     if figurePath == '':
@@ -185,7 +185,7 @@ if __name__ == '__main__':
     symCols = [2]
 
     # Cluster count
-    clustCounts = [5, 6] #[3, 4, 5, 6, 7, 8
+    clustCounts = [5, 6] #[3, 4, 5, 6, 7, 8]
 
     data, head = util.readData(acctData, False) # for beocat...
 
@@ -289,34 +289,11 @@ if __name__ == '__main__':
     del newData
 
     # Create list of processes to run supervised learning...
-    if beocatFlag:
-        supervisedLearningProcs = []
-
-        supervisedLearningProcs.append(Process(target=performSupervisedLearning, \
-            args=("Non-Clustered.", np.array(dataWithoutCluster), np.array(answers), \
-            memLoc, cpuLoc, )))
-
-        for i, item in enumerate(clustCounts):
-            supervisedLearningProcs.append(Process(target=performSupervisedLearning, \
-                args=("Clustered with Blakes and " + str(item) +" clusters.", np.array(dataClustered_blake[i]), np.array(answers), \
-                memLoc, cpuLoc, )))
-            supervisedLearningProcs.append(Process(target=performSupervisedLearning, \
-                args=("Clustered with Tracys and " + str(item) +" clusters.", np.array(dataClustered_tracy[i]), np.array(answers), \
-                memLoc, cpuLoc, )))
-
-    
-            for i in range(len(supervisedLearningProcs)):
-                supervisedLearningProcs[i].start()
-            
-            for i in range(len(supervisedLearningProcs)):
-                supervisedLearningProcs[i].join()
-
-    else:
-        performSupervisedLearning("Non-Clustered.", np.array(dataWithoutCluster), np.array(answers), memLoc, cpuLoc)
-        for i, item in enumerate(clustCounts):
-            performSupervisedLearning("Clustered with Blakes and " + str(item) +" clusters.", \
-                np.array(dataClustered_blake[i]), np.array(answers), \
-                memLoc, cpuLoc)
-            performSupervisedLearning("Clustered with Tracys and " + str(item) +" clusters.", \
-                np.array(dataClustered_tracy[i]), np.array(answers), \
-                memLoc, cpuLoc)
+    performSupervisedLearning("Non-Clustered.", np.array(dataWithoutCluster), np.array(answers), memLoc, cpuLoc)
+    for i, item in enumerate(clustCounts):
+        performSupervisedLearning("Clustered with Blakes and " + str(item) +" clusters.", \
+            np.array(dataClustered_blake[i]), np.array(answers), \
+            memLoc, cpuLoc)
+        performSupervisedLearning("Clustered with Tracys and " + str(item) +" clusters.", \
+            np.array(dataClustered_tracy[i]), np.array(answers), \
+            memLoc, cpuLoc)
